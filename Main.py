@@ -53,9 +53,6 @@ def show_language_options():
         print("Okay, no problem.")
     else:
         print("Invalid input. Please enter 'yes' or 'no'.")
-    # Call the function to run it
-    #show_language_options()
-
 
 if __name__ == "__main__":
     # Substitute 'French' with the language you want to have a conversation in
