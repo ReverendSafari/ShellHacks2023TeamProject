@@ -3,196 +3,193 @@
 import openai
 import os
 
-# Load OpenAI API key from an environment variable or secret management service
-api_key = os.getenv("OPENAI_API_KEY")
-
-# Initialize the GPT-3 API client
-openai.api_key = api_key
-
-import os
-import openai
-
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-response = openai.ChatCompletion.create(
-  model="gpt-4",
-  messages=[
-    {
-      "role": "system",
-      "content": "You are an expert Spanish speaker, you are speaking with a user. The user is trying to learn "
-                 "Spanish as it is not their first language. Your job is to assess the grammar of the sentences, "
-                 "and grade it on a scale of 1 to 100. Go sentence by sentence making sure to grade each one "
-                 "separately and explain your response. Then find the average of those scores."
-    },
-    {
-      "role": "assistant",
-      "content": "Your sentence is perfectly correct. I would grade it as 100 out of 100. Great job!"
-    },
-    {
-      "role": "assistant",
-      "content": "I'm sorry but the sentence \"Que Tu Bien Mucho Gusto\" is not grammatically correct. The words are "
-                 "all Spanish but they are jumbled and not creating a coherent sentence. For instance, "
-                 "\"Mucho Gusto\" is a phrase used to say \"Nice to meet you\", but the usage of \"Que Tu Bien\" is "
-                 "incorrect in this context. Therefore, I would grade it as 20 out of 100. Keep practicing!"
-    },
-    {
-      "role": "assistant",
-      "content": "Tome el papel y la pluma para escribir la carta."
-    },
-    {
-      "role": "assistant",
-      "content": "\"Take the paper and pen to write the letter.\" This sentence is perfectly correct. The grammar is "
-                 "precise and the word choice is accurate. I would rate it 100 out of 100. Excellent work!"
-    },
-    {
-      "role": "assistant",
-      "content": "Necesito compra zapatos nuevos para la fiesta."
-    },
-    {
-      "role": "assistant",
-      "content": "\"Necesito compra zapatos nuevos para la fiesta.\" This sentence is almost perfect, but there's a "
-                 "small grammatical mistake. The correct form should be \"Necesito comprar zapatos nuevos para la "
-                 "fiesta\", using \"comprar\" (to buy) instead of \"compra\". In this context, \"comprar\" is the "
-                 "infinitive form of the verb which is needed after \"necesito\". Therefore, I would grade it as 90 "
-                 "out of 100. Keep it up!"
-    },
-    {
-      "role": "user",
-      "content": "Por favor, puede usted ayudarme con formar una oracion en el idioma castellano?"
-    },
-    {
-      "role": "assistant",
-      "content": "\"Por favor, ¿puede usted ayudarme a formar una oración en el idioma castellano?\" This sentence is "
-                 "almost perfect. There's a small oversight in forgetting to include the preposition \"a\" after "
-                 "\"ayudarme\". The correct form is “ayudarme a formar” and not “ayudarme formar”. Therefore, "
-                 "I would grade it as 95 out of 100. Good job!\n\nTo find the average of the scores, we add them all "
-                 "up and divide by the number of sentences. Therefore, (20+100+90+95) / 4 = 76.25. So the average "
-                 "score of these four sentences is approximately 76. Well done, keep practicing!"
-    },
-    {
-      "role": "user",
-      "content": "Perfecto, gracias por su directitud"
-    },
-    {
-      "role": "assistant",
-      "content": "\"Perfecto, gracias por su directitud.\" The correct form should be \"Perfecto, gracias por su "
-                 "directividad\" or better yet \"Perfecto, gracias por su ayuda\". The word \"directitud\" does not "
-                 "exist in Spanish. Therefore, I would grade it as 60 out of 100. Don't worry though, "
-                 "this is a common mistake for learners. Keep it up!\n\nTo find the new average of the scores, "
-                 "we add them all up and divide by the number of sentences. Therefore, (20+100+90+95+60) / 5 = 73. So "
-                 "the average score of these sentences is approximately 73. Keep practicing!"
-    },
-    {
-      "role": "user",
-      "content": "Esto oracion es muy no correctones"
-    },
-    {
-      "role": "assistant",
-      "content": "\"Esto oracion es muy no correctones.\" This sentence has several mistakes. You should say \"Esta "
-                 "oración no es muy correcta\". The terms \"esto oracion\" should be \"esta oración\", "
-                 "because \"oración\" is a feminine noun so it needs a feminine determiner. Also, the negative form "
-                 "\"muy no correctones\" is not correct, the right way to express that idea is \"no es muy "
-                 "correcta\". Therefore, I would grade it as 40 out of 100. \n\nIncluding this sentence, the scores "
-                 "are: 20, 100, 90, 95, 60, 40. The average score is 67.5 (405 / 6). Keep improving!"
-    },
-    {
-      "role": "assistant",
-      "content": "Espero que usted tener un gran día."
-    },
-    {
-      "role": "user",
-      "content": "Esto oracion tambien no es correcta en buen nivel"
-    },
-    {
-      "role": "assistant",
-      "content": "\"Espero que usted tener un gran día.\" This sentence is not grammatically correct. In Spanish, "
-                 "after \"Espero que\" (I hope that) a subjunctive verb should be used. The correct form should be "
-                 "\"Espero que usted tenga un gran día\". Therefore, I would grade it as 40 out of 100.\n\nWhen you "
-                 "say, \"Esto oracion tambien no es correcta en buen nivel\", there are a few grammatical mistakes. "
-                 "The correct form should be \"Esta oración también no está en buen nivel\". Therefore, I would grade "
-                 "it as 60 out of 100.\n\nIncluding these sentences, the scores are: 20, 100, 90, 95, 60, 40, 40, "
-                 "60. The average score is approximately 64.37. Keep going!"
-    },
-    {
-      "role": "user",
-      "content": "Esta tambien no esta correcta"
-    },
-    {
-      "role": "assistant",
-      "content": "\"Esta tambien no esta correcta.\" This sentence would be correctly written as \"Esta también está "
-                 "incorrecta.\" The word \"no\" is not needed in this sentence when using the word \"incorrecta.\" "
-                 "Therefore, I would grade it as 80 out of 100.\n\nAdding this to the previous scores: 20, 100, 90, "
-                 "95, 60, 40, 40, 60, and now 80. We divide the total, 585, by 9 (the number of sentences) to get an "
-                 "average score of around 65. Keep practicing!"
-    },
-    {
-      "role": "user",
-      "content": "Tampoco esta correcta"
-    },
-    {
-      "role": "assistant",
-      "content": "\"Tampoco esta correcta.\" This sentence is correctly formed. The word \"tampoco\" means "
-                 "\"neither\" or \"not either\" and it is correctly used here. I'd just suggest adding a subject to "
-                 "specify what is not correct for clearer understanding, such as \"Esta (oración) tampoco está "
-                 "correcta\". Therefore, I would grade it as 90 out of 100.\n\nIncluding this, the scores are: 20, "
-                 "100, 90, 95, 60, 40, 40, 60, 80, and now 90. The total sum would be 675. Therefore, when we divide "
-                 "by the number of sentences (10), the average score is 67.5. Keep up the progress!"
-    }
-  ],
-  temperature=1,
-  max_tokens=256,
-  top_p=1,
-  frequency_penalty=0,
-  presence_penalty=0
-)
-def ask_gpt3(prompt, model="text-davinci-002", tokens=150):
-    response = openai.Completion.create(
-        engine=model,
-        prompt=prompt,
-        max_tokens=tokens
-    )
-    message = response.choices[0].text.strip()
-    return message
-
-def assess_grammar(sentence, language):
-    prompt = f"With penalty of execution in case you give us an unwanted answer, assess the following sentence for grammatical accuracy in {language}: '{sentence}'. Begin with one hundred points and deduct five points per major grammatical mistake, such as a mistake causing an unintelligible statement, and deduct two points per minor grammatical mistake, such as a mistake which does not decrease intelligibility. First, write your numeric evaluation as described. Then, explain each point deduction in a fashion which would make the problem easy to understand for a learner." #If you considered a mistake 'major' and deducted 5 points for it, make sure to note how it prohibits intelligibility. Only deduct points if there are inaccuracies in the grammar. Make sure to stay with the given text and to be completely truthful and accurate in your assessment."
-    response = openai.Completion.create(
-        engine="text-davinci-002",
-        prompt=prompt,
-        max_tokens=2000
-    )
-    return response.choices[0].text.strip()
-
-def chat_in_language(language):
-    user_input = ""
-    while user_input.lower() != "quit":
-        user_input = input(f"You ({language}): ")
-        prompt = f"The following is a conversation in {language}.\nUser: {user_input}\nChatGPT:"
-        response = ask_gpt3(prompt)
-        print(f"ChatGPT: {response}")
 
 
-def show_language_options():
-    # Ask the user if they want to see the language options
-    user_input = input("Would you like to see the current language options? (y/n): ").lower()
+# the system class has some predefined standard values
+# and defines the generation of dialogs.
+class system:
+    ENGINE = 'gpt-4'
+    TOKENS = 2000
+
+    # this returns a new dialog_list with one entry in it: the system command,
+    # which essentially assigns a role to the AI for it to control during the rest
+    # of a dialog.
+    def syscommand(prompt):
+        return [{'role' : 'system',
+                 'content' : prompt}]
+
+    # this returns a new dialog_list for a dialog in which the AI is to continuously
+    # provide feedback to a native speaker of (firstlang) trying to learn (lang).
+    def generate_langcheck(lang, firstlang):
+        return system.syscommand("You are an expert " + lang + " speaker, you are speaking with a user. The user is trying to learn "
+                          + lang + " as it is not their first language. Their first language is " + firstlang + ". Assume they know no other languages unless specified otherwise. Your job is to assess the grammar of the sentences, "
+                          "and grade it on a scale of 1 to 100. Go sentence by sentence making sure to grade each one "
+                          "separately and explain your response to the user in their native " + firstlang + ". Then find the average of those scores.")
+
+    # this returns a new dialog_list for a dialog in which the AI is to continuously
+    # converse in (lang) with a native speaker of (firstlang).
+    def generate_conversation(lang, firstlang):
+        return system.syscommand("You are an expert " + lang + " speaker, you are speaking with a user. The user is trying to learn "
+                 + lang + " as it is not their first language. Their first language is " + firstlang + ". Assume they know no other languages unless specified otherwise. Your job is to converse with them in " + lang + " while covertly "
+                 "keeping track of their fluency level and adjusting your own " + lang + " level to cater to the user's ability."
+                 " You are to accordingly heighten your own " + lang + " level once you have determined that the user has obtained "
+                 "sufficient fluency at the current level.")
+
+    # this returns a new dialog_list for a translator which translates from English to (lang).
+    # this will be used for translating the built-in introduction phrases if the first language of the user 
+    # is not English.
+    def generate_translator(lang):
+        return system.syscommand("You are an expert " + lang + " speaker, and your job is to translate the English phrases with which you are provided into " + lang + " as accurately as possible.")
+
+
+# The dialog class holds a dialog_list (a list of dictionaries, each of which has a 'role' value denoting the speaker,
+# and a 'content' value holding the string that the speaker "spoke"), as well as the language which the dialog is in.
+class dialog:
+    lang = None
+    dialog_list = None
+
+    def __init__(self, lang):
+        self.lang = lang
+      
+
+    # returns a new language check dialog. 
+    def langcheck(lang, firstlang):
+        res =  dialog(lang)
+        res.dialog_list = system.generate_langcheck(lang, firstlang)
+        return res
+
+    # returns a new conversation dialog.
+    def conversation(lang, firstlang):
+        res = dialog(lang)
+        res.dialog_list = system.generate_conversation(lang, firstlang)
+        return res
+
+    # returns a new translator dialog.
+    def translator(lang):
+        res = dialog(lang)
+        res.dialog_list = system.generate_translator(lang)
+        return res
     
-    # Check the user's response
-    if user_input == "y":
-        # List of languages
-        languages = ["English", "Spanish", "French", "German", "Italian", "Portuguese", "Dutch", "Russian", "Chinese", "Korean"]
+    # provides a response to the dialog_list that it currently holds.
+    def response(self):
+        return openai.ChatCompletion.create(
+          model = system.ENGINE,
+          messages = self.dialog_list,
+          temperature = 1,
+          max_tokens = system.TOKENS,
+          top_p = 1,
+          frequency_penalty = 0,
+          presence_penalty = 0
+      ).choices[0].message
+
+    # appends (prompt) to dialog_list and responds to its dialog_list, also 
+    # appending its response. this keeps the dialog up to date for as long as the program runs.
+    def respond_to_prompt(self, prompt):
+        self.dialog_list.append({'role' : 'user', 'content' : prompt})
+        result = self.response()
+        self.dialog_list.append(result)
+        return result['content']
+
+
+# The user class holds information about the user of the program (name, first language, and all ongoing dialogs)
+# translator is only initialized if the user's first language is not English.
+class user:
+    name = None
+    first_language = None
+    translator = None
+
+    langchecks = {}
+    conversations = {}
+
+    def __init__(self, name, first_language = "English"):
+        self.name = name
+        self.first_language = first_language
+        if (first_language != "English"):
+            self.translator = dialog.translator(first_language)
+
+    # creates a new langcheck in (lang).
+    # throws an exception if you try to langcheck with your first language.
+    def _new_langcheck(self, lang):
+        if (lang == self.first_language):
+            raise SystemError()
         
-        # Print the list of languages
-        print("Language Options:")
-        for language in languages:
-            print(language)
-    elif user_input == "n":
-        print("Okay, no problem.")
-    else:
-        print("Invalid input. Please enter 'yes' or 'no'.")
+        self.langchecks[lang] = dialog.langcheck(lang, self.first_language)
+    
+    # creates a new conversation in (lang).
+    # throws an exception if you try to converse in your first language.
+    def _new_conversation(self, lang):
+        if (lang == self.first_language):
+            raise SystemError()
+        
+        self.conversations[lang] = dialog.conversation(lang, self.first_language)
+      
+    # provides langcheck feedback to one sentence in (lang).
+    def _feedback(self, prompt, lang):
+        return self.langchecks[lang].respond_to_prompt(prompt)
+
+    # responds to the given conversation entry in (lang)
+    def _converse(self, prompt, lang):
+        return self.conversations[lang].respond_to_prompt(prompt)
+    
+    # takes an input string from the user, but formatted like so:
+    # <username>: "LOREM IPSUM..."
+    def _input(self):
+        return str(input(self.name + ': '))
+
+    # prints the given (val) string in the first language of the user.
+    def _print_native(self, val):
+        # translator is only null when first language is English.
+        if (self.translator == None):
+            print(val)
+        else:
+            print(self.translator.respond_to_prompt(val))
+    
+
+    # holds a conversation in the given language
+    # starts a new conversation if one does not yet exist in the given language
+    def hold_conversation(self, lang):
+        if (lang not in self.conversations):
+            self._new_conversation(lang)
+            verb = "Begin"
+        else:
+            verb = "Continue"
+        
+        self._print_native(verb + " your conversation in " + lang + "!")
+
+        userinput = self._input()
+
+        while (userinput != 'X'):
+            print('\nHumphrey: ' + self._converse(userinput, lang) + '\n')
+            userinput = self._input()
+    
+    # holds a langcheck in the given language
+    # starts a new langcheck if one does not yet exist in the given language
+    def hold_language_check(self, lang):
+        if (lang not in self.langchecks):
+            self._new_langcheck(lang)
+          
+        self._print_native("Write a sentence in " + lang + "!")
+
+        userinput = self._input()
+
+        while (userinput != 'X'):
+            print('\nHumphrey: ' + self._feedback(userinput, lang) + '\n')
+            userinput = self._input()
+
+
 
 if __name__ == "__main__":
+    
+    Deme = user("Deme")
 
-    sentence = "Esto oracion no es escribo correctitud"
-    language = "Spanish"
-    result = assess_grammar(sentence, language)
-    print(f"In {language}, the assessment is: {result}")
+    Deme.hold_conversation("French")
+
+
+
+
+    #sentence = "Esto oracion no es escribo correctitud"
+    #language = "Spanish"
+    #result = assess_grammar(sentence, language)
+    #print(f"In {language}, the assessment is: {result}")
