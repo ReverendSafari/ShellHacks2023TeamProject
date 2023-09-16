@@ -12,7 +12,7 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 class system:
     NAME = 'Thomas'
     ENGINE = 'gpt-4'
-    TOKENS = 10000
+    TOKENS = 2000
     LANGS = ["English", "French", "Spanish", "Italian", "Portuguese", "Hebrew", "Russian", "German", "Dutch", "Turkish", "Hindi", "Vietnamese", "Armenian", "Azerbaijani", "Arabic", "Kazakh", "Kyrgyz", "Ukrainian", "Polish", "Swedish", "Danish", "Norwegian Bokmal", "Nynorsk", "Finnish"]
     
     #keeps track of all existent users.
