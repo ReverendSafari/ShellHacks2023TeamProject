@@ -35,6 +35,28 @@ def chat_in_language(language):
         response = ask_gpt3(prompt)
         print(f"ChatGPT: {response}")
 
+
+def show_language_options():
+    # Ask the user if they want to see the language options
+    user_input = input("Would you like to see the current language options? (y/n): ").lower()
+    
+    # Check the user's response
+    if user_input == "y":
+        # List of languages
+        languages = ["English", "Spanish", "French", "German", "Italian", "Portuguese", "Dutch", "Russian", "Chinese", "Korean"]
+        
+        # Print the list of languages
+        print("Language Options:")
+        for language in languages:
+            print(language)
+    elif user_input == "n":
+        print("Okay, no problem.")
+    else:
+        print("Invalid input. Please enter 'yes' or 'no'.")
+    # Call the function to run it
+    #show_language_options()
+
+
 if __name__ == "__main__":
     # Substitute 'French' with the language you want to have a conversation in
     sentence = "Esto oracion no es escribo correctitud"
