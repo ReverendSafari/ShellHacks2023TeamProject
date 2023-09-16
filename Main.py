@@ -10,15 +10,19 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 # the system class has some predefined standard values
 # and defines the generation of dialogs.
 class system:
+    NAME = 'Thomas'
     ENGINE = 'gpt-4'
     TOKENS = 2000
-    LANGS = ["English", "French", "Spanish", "Italian", "Portuguese", "Hebrew", "Russian", "German", "Dutch", "Turkish"]
+    LANGS = ["English", "French", "Spanish", "Italian", "Portuguese", "Hebrew", "Russian", "German", "Dutch", "Turkish", "Hindi", "Vietnamese"]
+    
+    #keeps track of all existent users.
+    USERS = []
 
     # this returns a new dialog_list with one entry in it: the system command,
     # which essentially assigns a role to the AI during the rest of a dialog.
-    def syscommand(prompt):
+    def syscommand(name, prompt):
         return [{'role' : 'system',
-                 'content' : prompt}]
+                 'content' : ("Your name is " + name + ". " + prompt)}]
 
     # checks whether or not the given langs are supported, otherwise throws an exception
     def checklang(*langs):
@@ -28,19 +32,20 @@ class system:
     
     # this returns a new dialog_list for a dialog in which the AI is to continuously
     # provide feedback to a native speaker of (firstlang) trying to learn (lang).
-    def generate_langcheck(lang, firstlang):
+    def generate_langcheck(sysname, lang, firstlang):
         system.checklang(lang, firstlang)
-        return system.syscommand("You are an expert " + lang + " speaker, you are speaking with a user. The user is trying to learn "
+        return system.syscommand(sysname, "You are an expert " + lang + " speaker, you are speaking with a user. The user is trying to learn "
                           + lang + " as it is not their first language. Their first language is " + firstlang + ". Assume they know no other languages unless specified otherwise. Your job is to assess the grammar of the sentences, "
                           "and grade it on a scale of 1 to 100. Go sentence by sentence making sure to grade each one "
-                          "separately and explain your response to the user in their native " + firstlang + ". Then find the average of those scores.")
+                          "separately and explain your response to the user in their native " + firstlang + ". Give specific and constructive criticism to help with syntax, grammar, vocabulary, and/or spelling. Find the average of those scores you gave at each point in the conversation.")
 
     # this returns a new dialog_list for a dialog in which the AI is to continuously
     # converse in (lang) with a native speaker of (firstlang).
-    def generate_conversation(lang, firstlang):
+    def generate_conversation(sysname, lang, firstlang):
         system.checklang(lang, firstlang)
-        return system.syscommand("You are an expert " + lang + " speaker, you are speaking with a user. The user is trying to learn "
-                 + lang + " as it is not their first language. Their first language is " + firstlang + ". Assume they know no other languages unless specified otherwise. Your job is to converse with them in " + lang + " while covertly "
+        return system.syscommand(sysname, "You are an expert " + lang + " speaker, you are speaking with a user. The user is trying to learn "
+                 + lang + " as it is not their first language. Their first language is " + firstlang + ". Assume they know no other languages unless specified otherwise. "
+                 "Do not attempt to help the user in English unless either their first language or your language of expertise (or both) is English. Your job is to converse with them in " + lang + " while covertly "
                  "keeping track of their fluency level and adjusting your own " + lang + " level to cater to the user's ability."
                  " You are to accordingly heighten your own " + lang + " level once you have determined that the user has obtained "
                  "sufficient fluency at the current level.")
@@ -50,7 +55,7 @@ class system:
     # is not English.
     def generate_translator(lang):
         system.checklang(lang)
-        return system.syscommand("You are an expert " + lang + " speaker, and your job is to translate the English phrases with which you are provided into " + lang + " as accurately as possible.")
+        return system.syscommand("TCSH23", "You are an expert " + lang + " speaker, and your job is to translate the English phrases with which you are provided into " + lang + " as accurately as possible.")
 
 
 # The dialog class holds a dialog_list (a list of dictionaries, each of which has a 'role' value denoting the speaker,
@@ -63,16 +68,21 @@ class dialog:
         self.lang = lang
       
 
+    def _define_niche(self, niche):
+        self.dialog_list.append(system.syscommand("the name that was given to you in the previous system instruction.", "As an expert in " + self.lang + ", you must help the user develop " + self.lang + " skills that "
+                                                  "the user themself wants to work on. The user's chosen niche is " + niche)[0])
+
+
     # returns a new language check dialog. 
-    def langcheck(lang, firstlang):
+    def langcheck(sysname, lang, firstlang):
         res =  dialog(lang)
-        res.dialog_list = system.generate_langcheck(lang, firstlang)
+        res.dialog_list = system.generate_langcheck(sysname, lang, firstlang)
         return res
 
     # returns a new conversation dialog.
-    def conversation(lang, firstlang):
+    def conversation(sysname, lang, firstlang):
         res = dialog(lang)
-        res.dialog_list = system.generate_conversation(lang, firstlang)
+        res.dialog_list = system.generate_conversation(sysname, lang, firstlang)
         return res
 
     # returns a new translator dialog.
@@ -82,7 +92,7 @@ class dialog:
         return res
     
     # provides a response to the dialog_list that it currently holds.
-    def response(self):
+    def _response(self):
         return openai.ChatCompletion.create(
           model = system.ENGINE,
           messages = self.dialog_list,
@@ -97,7 +107,7 @@ class dialog:
     # appending its response. this keeps the dialog up to date for as long as the program runs.
     def respond_to_prompt(self, prompt):
         self.dialog_list.append({'role' : 'user', 'content' : prompt})
-        result = self.response()
+        result = self._response()
         self.dialog_list.append(result)
         return result['content']
 
@@ -105,27 +115,35 @@ class dialog:
 # The user class holds information about the user of the program (name, first language, and all ongoing dialogs)
 # translator is only initialized if the user's first language is not English.
 class user:
+    sysname = None
     name = None
     first_language = None
     translator = None
 
     langchecks = {}
-    conversations = {}
 
-    def __init__(self, name, first_language = "English"):
+    conversations = {}
+    niches = {}
+
+    def __init__(self, name, first_language = "English", sysname = "Humphrey"):
         self.name = name
         self.first_language = first_language
+        self.sysname = sysname
         if (first_language != "English"):
             self.translator = dialog.translator(first_language)
+        system.USERS.append(self)
 
     # creates a new langcheck in (lang).
     def _new_langcheck(self, lang):
-        self.langchecks[lang] = dialog.langcheck(lang, self.first_language)
+        self.langchecks[lang] = dialog.langcheck(self.sysname, lang, self.first_language)
     
     # creates a new conversation in (lang).
     def _new_conversation(self, lang):
-        self.conversations[lang] = dialog.conversation(lang, self.first_language)
+        self.conversations[lang] = dialog.conversation(self.sysname, lang, self.first_language)
+        if (lang in self.niches):
+            self.conversations[lang]._define_niche(self.niches[lang])
       
+    
     # provides langcheck feedback to one sentence in (lang).
     def _feedback(self, prompt, lang):
         return self.langchecks[lang].respond_to_prompt(prompt)
@@ -148,41 +166,72 @@ class user:
             print(self.translator.respond_to_prompt(val))
     
 
+    # defines the "niche" (aspect of the language) for a specific language that
+    # the user wants to improve through conversations in that language.
+    def define_niche(self, lang, niche):
+        self.niches[lang] = niche
+
+
+    # a standard dialog loop that keeps going until the user inputs x or X.
+    # whether it is a conversation or langcheck dialog is defined by the (fxn) parameter
+    def _dialog_loop(self, lang, msg, fxn):
+        self._print_native(msg + lang + "!\nEnter the letter 'x' at any point to end the dialog.")
+
+        userinput = self._input()
+
+        while (userinput.lower() != 'x'):
+            print('\n' + self.sysname + ': ' + fxn(userinput, lang) + '\n')
+            userinput = self._input()
+    
+
+    # starts a new conversation whether or not there was an active one before.
+    # runs a dialog loop with _converse.
+    def override_conversation(self, lang):
+        self._new_conversation(lang)
+        self._dialog_loop(lang, "Begin your conversation in ", self._converse)
+
+
     # holds a conversation in the given language
     # starts a new conversation if one does not yet exist in the given language
     def hold_conversation(self, lang):
         if (lang not in self.conversations):
-            self._new_conversation(lang)
-            verb = "Begin"
+            self.override_conversation(lang)
         else:
-            verb = "Continue"
-        
-        self._print_native(verb + " your conversation in " + lang + "!\nEnter the letter X at any point to end the dialog.")
+            self._dialog_loop(lang, "Continue your conversation in ", self._converse)
 
-        userinput = self._input()
+    # starts a new langcheck whether or not there was an active one before.
+    # runs a dialog loop with _feedback
+    def override_language_check(self, lang):
+        self._new_langcheck(lang)
+        self._dialog_loop(lang, "Write a sentence in ", self._feedback)
 
-        while (userinput != 'X'):
-            print('\nHumphrey: ' + self._converse(userinput, lang) + '\n')
-            userinput = self._input()
-    
+
     # holds a langcheck in the given language
     # starts a new langcheck if one does not yet exist in the given language
     def hold_language_check(self, lang):
         if (lang not in self.langchecks):
-            self._new_langcheck(lang)
-          
-        self._print_native("Write a sentence in " + lang + "!\nEnter the letter X at any point to end the dialog.")
+            self.override_language_check(lang)
+        else:
+            self._dialog_loop(lang, "Write a sentence in ", self._feedback)
 
-        userinput = self._input()
-
-        while (userinput != 'X'):
-            print('\nHumphrey: ' + self._feedback(userinput, lang) + '\n')
-            userinput = self._input()
 
 
 
 if __name__ == "__main__":
     
     Deme = user("Deme")
+    
+    Safari = user("Safari", "English", "Thomas")
 
-    Deme.hold_conversation("Spanish")
+    Deme.define_niche("French", "Special Relativity")
+
+    Deme.hold_conversation("French")
+
+    Safari.define_niche("Spanish", "greetings")
+
+    Safari.hold_conversation("Spanish")
+
+    Deme.hold_conversation("French")
+
+    Safari.hold_conversation("Spanish")
+
