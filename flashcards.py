@@ -1,16 +1,19 @@
+import random
+import streamlit as st
+
 class FlashSet:
     def __init__(self, name):
         self.name = name
-        self.flashcards = []
+        self.flashcards = {}  # Use a dictionary to store flashcards
 
     def add_flashcard(self, term, translation):
         flashcard = FlashCard(term, translation)
-        self.flashcards.append(flashcard)
+        self.flashcards[term] = flashcard  # Use term as the key and FlashCard object as the value
 
     def display_flashcards(self):
         print(f"Flashcards in '{self.name}':")
-        for index, flashcard in enumerate(self.flashcards, start=1):
-            print(f"{index}. Term: {flashcard.term}, Translation: {flashcard.translation}")
+        for term, flashcard in self.flashcards.items():
+            print(f"Term: {term}, Translation: {flashcard.translation}")
 
 class FlashCard:
     def __init__(self, term, translation):
@@ -22,49 +25,86 @@ def create_new_set():
     new_set = FlashSet(set_name)
     return new_set
 
+def add_flashcards_to_set(flashset):
+    while True:
+        term = input("Enter the term (or type 'done' to finish adding flashcards): ")
+        if term.lower() == 'done':
+            break
+        translation = input("Enter the translation: ")
+        flashset.add_flashcard(term, translation)
+        print("Flashcard added successfully.")
+
+def practice_flashcards(flashset):
+    print(f"Practice '{flashset.name}' Flashcards:")
+    #picks a random pair from the set to test
+    solvepick = term, translation = random.choice(list(flashset.items()))
+
+    for term, flashcard in solvepick:
+        expected_translation = flashcard.translation #corresponding answer
+
+        user_translation = input(f"What is the translation of '{term}'? (Type 'exit' to quit): ")
+
+        if user_translation.lower() == 'exit':
+            print("Exiting flashcard practice.")
+            break
+
+        if user_translation.strip().lower() == expected_translation.lower():
+            print("Correct! Moving to the next flashcard.")
+        else:
+            print(f"Wrong. The correct translation is '{expected_translation}'.")
+            print("Type the correct word to continue:")
+
+            while True:
+                user_input = input().strip().lower()
+                if user_input == expected_translation.lower():
+                    print("Correct! Moving to the next flashcard.")
+                    break
+                else:
+                    print("Wrong. Try again.")
+
+def test():
+    test 
+
 def main():
-    flashcard_sets = []
+    flashcard_sets = []  # storing the sets here
 
     while True:
-        print("\nFlashcard Program Menu:")
-        print("1. Create a new flashcard set")
-        print("2. Add a flashcard to a set")
-        print("3. Display flashcards in a set")
-        print("4. Exit")
 
-        choice = input("Enter your choice (1/2/3/4): ")
+        cardmode = st.selectbox("How would you like to be contacted?", ("Create Set", "Add Flashcards to Set", "Display Set", "Practice Set"))
+        #print("\nFlashcard Program Menu:")
+        #print("1. Create a new flashcard set")
+        #print("2. Add flashcards to a set")
+        #print("3. Display flashcards in a set")
+        #print("4. Practice flashcard set")
+        #print("5. Exit")
 
-        if choice == "1":
+        #choice = input("Enter your choice (1/2/3/4/5): ")
+
+        if cardmode == "Create Set":
             new_set = create_new_set()
-            flashcard_sets.append(new_set)
+            flashcard_sets.append(new_set.name)  # Adding the set to the list
             print(f"Flashcard set '{new_set.name}' created.")
-        elif choice == "2":
-            if not flashcard_sets:
-                print("No flashcard sets available. Create a new set first.")
+        elif cardmode == "Add Flashcards to Set":
+            set_name = input("Enter the name of the set to add flashcards to: ")
+            flashset = flashcard_sets.get(set_name)
+            if flashset is None:
+                print(f"Set '{set_name}' not found. Please create the set first.")
             else:
-                print("Choose a flashcard set to add a flashcard to:")
-                for index, flashcard_set in enumerate(flashcard_sets, start=1):
-                    print(f"{index}. {flashcard_set.name}")
-                set_choice = int(input("Enter the number of the set: ")) - 1
-
-                term = input("Enter the term: ")
-                translation = input("Enter the translation: ")
-
-                flashcard_sets[set_choice].add_flashcard(term, translation)
-                print("Flashcard added successfully.")
-        elif choice == "3":
-            if not flashcard_sets:
-                print("No flashcard sets available. Create a new set first.")
+                add_flashcards_to_set(flashset)
+        elif cardmode == "Display Set":
+            set_name = input("Enter the name of the set to display: ")
+            flashset = flashcard_sets.get(set_name)
+            if flashset is None:
+                print(f"Set '{set_name}' not found.")
             else:
-                print("Choose a flashcard set to display:")
-                for index, flashcard_set in enumerate(flashcard_sets, start=1):
-                    print(f"{index}. {flashcard_set.name}")
-                set_choice = int(input("Enter the number of the set: ")) - 1
-
-                flashcard_sets[set_choice].display_flashcards()
-        elif choice == "4":
-            print("Exiting the flashcard program. Goodbye!")
-            break
+                flashset.display_flashcards()
+        elif cardmode == "Practice Set":
+            set_name = input("Enter the name of the set to practice: ")
+            flashset = flashcard_sets.get(set_name)
+            if flashset is None:
+                print(f"Set '{set_name}' not found.")
+            else:
+                practice_flashcards(flashset)
         else:
             print("Invalid choice. Please select a valid option.")
 

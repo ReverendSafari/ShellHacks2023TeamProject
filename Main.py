@@ -12,11 +12,11 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 class system:
     NAME = 'Thomas'
     ENGINE = 'gpt-4'
-    TOKENS = 2000
-    LANGS = ["English", "French", "Spanish", "Italian", "Portuguese", "Hebrew", "Russian", "German", "Dutch", "Turkish", "Hindi", "Vietnamese"]
+    TOKENS = 10000
+    LANGS = ["English", "French", "Spanish", "Italian", "Portuguese", "Hebrew", "Russian", "German", "Dutch", "Turkish", "Hindi", "Vietnamese", "Armenian", "Azerbaijani", "Arabic", "Kazakh", "Kyrgyz", "Ukrainian", "Polish", "Swedish", "Danish", "Norwegian Bokmal", "Nynorsk", "Finnish"]
     
     #keeps track of all existent users.
-    USERS = []
+    USERS = {}
 
     # this returns a new dialog_list with one entry in it: the system command,
     # which essentially assigns a role to the AI during the rest of a dialog.
@@ -36,8 +36,8 @@ class system:
         system.checklang(lang, firstlang)
         return system.syscommand(sysname, "You are an expert " + lang + " speaker, you are speaking with a user. The user is trying to learn "
                           + lang + " as it is not their first language. Their first language is " + firstlang + ". Assume they know no other languages unless specified otherwise. Your job is to assess the grammar of the sentences, "
-                          "and grade it on a scale of 1 to 100. Go sentence by sentence making sure to grade each one "
-                          "separately and explain your response to the user in their native " + firstlang + ". Give specific and constructive criticism to help with syntax, grammar, vocabulary, and/or spelling. Find the average of those scores you gave at each point in the conversation.")
+                          "and grade it as a fraction with denominator 100. The highest score available is 100/100. Go sentence by sentence making sure to grade each one "
+                          "separately and explain your response to the user in their native " + firstlang + ". Give specific and constructive criticism to help with syntax, grammar, vocabulary, and/or spelling. Specifically state the current score as a fraction with denominator 100")
 
     # this returns a new dialog_list for a dialog in which the AI is to continuously
     # converse in (lang) with a native speaker of (firstlang).
@@ -67,7 +67,7 @@ class dialog:
     def __init__(self, lang):
         self.lang = lang
       
-
+    # defines the "niche" - what the user would like to specifically focus on in this dialog
     def _define_niche(self, niche):
         self.dialog_list.append(system.syscommand("the name that was given to you in the previous system instruction.", "As an expert in " + self.lang + ", you must help the user develop " + self.lang + " skills that "
                                                   "the user themself wants to work on. The user's chosen niche is " + niche)[0])
@@ -89,6 +89,11 @@ class dialog:
     def translator(lang):
         res = dialog(lang)
         res.dialog_list = system.generate_translator(lang)
+        return res
+
+    def separator(lang):
+        res = dialog(lang)
+        res.dialog_list = system.generate_separator(lang)
         return res
     
     # provides a response to the dialog_list that it currently holds.
@@ -121,21 +126,23 @@ class user:
     translator = None
 
     langchecks = {}
+    scores = {}
 
     conversations = {}
     niches = {}
 
-    def __init__(self, name, first_language = "English", sysname = "Humphrey"):
+    def __init__(self, email, name, first_language = "English", sysname = "Humphrey"):
         self.name = name
         self.first_language = first_language
         self.sysname = sysname
         if (first_language != "English"):
             self.translator = dialog.translator(first_language)
-        system.USERS.append(self)
+        system.USERS[email] = self
 
     # creates a new langcheck in (lang).
     def _new_langcheck(self, lang):
         self.langchecks[lang] = dialog.langcheck(self.sysname, lang, self.first_language)
+        self.scores[lang] = [0.0] #this first will be the average!!!
     
     # creates a new conversation in (lang).
     def _new_conversation(self, lang):
@@ -144,9 +151,31 @@ class user:
             self.conversations[lang]._define_niche(self.niches[lang])
       
     
+    def _separate(self, string):
+        res = 0
+
+        for i in range(len(string)):
+            if string[i].isnumeric():
+                res *= 10
+                res += int(string[i])
+            elif string[i - 1].isnumeric():
+                break
+        
+        return res
+                
     # provides langcheck feedback to one sentence in (lang).
     def _feedback(self, prompt, lang):
-        return self.langchecks[lang].respond_to_prompt(prompt)
+        result = self.langchecks[lang].respond_to_prompt(prompt)
+        score = self._separate(result)
+
+        self.scores[lang][0] *= (len(self.scores[lang]) - 1)
+        self.scores[lang][0] += float(score)
+
+        self.scores[lang].append(score)
+        self.scores[lang][0] /= (len(self.scores[lang]) - 1)
+
+        return result
+
 
     # responds to the given conversation entry in (lang)
     def _converse(self, prompt, lang):
@@ -215,23 +244,18 @@ class user:
             self._dialog_loop(lang, "Write a sentence in ", self._feedback)
 
 
+    def show_scores(self, lang):
+        self._print_native("Your average score in " + lang + " is " + str(self.scores[lang][0]) + '%.')
+        print()
+
+        for i in range(1, len(self.scores[lang])):
+            print('[' + str(i) + '] --- ' + str(self.scores[lang][i]) + '%')
+        
 
 
 if __name__ == "__main__":
     
-    Deme = user("Deme")
+    Sami = user("dseturidze25@gmail.com", "Sami", "English", "Sami")
     
-    Safari = user("Safari", "English", "Thomas")
-
-    Deme.define_niche("French", "Special Relativity")
-
-    Deme.hold_conversation("French")
-
-    Safari.define_niche("Spanish", "greetings")
-
-    Safari.hold_conversation("Spanish")
-
-    Deme.hold_conversation("French")
-
-    Safari.hold_conversation("Spanish")
-
+    Sami.define_niche("Turkish", "travel")
+    Sami.hold_conversation("Turkish")
