@@ -1,23 +1,24 @@
 import streamlit as st
+import openai
 import sqlite3
+
+from Main import system
+
 
 # Initialize SQLite database
 def init_db():
     try:
-        with sqlite3.connect("users.db") as conn:
+        with sqlite3.connect("uDB.db") as conn:
             c = conn.cursor()
             c.execute(
-                """CREATE TABLE IF NOT EXISTS users (
+                """CREATE TABLE IF NOT EXISTS uDB (
                     username TEXT PRIMARY KEY,
                     password TEXT NOT NULL
                 );"""
             )
             conn.commit()
     except sqlite3.OperationalError as e:
-        if str(e) == "database is locked":
-            with sqlite3.connect("users.db") as conn:
-                conn.cursor().execute("SELECT * from users LIMIT 1;")
-            init_db()
+        st.error(f"Database error: {e}")
 
 init_db()
 # Initialize session state
@@ -41,9 +42,9 @@ if st.session_state.page == "login":
     username = st.sidebar.text_input("Username")
     password = st.sidebar.text_input("Password", type="password")
     if st.sidebar.button("Submit", key="subButton"):
-        conn = sqlite3.connect("users.db")
-        c = conn.cursor()
-        c.execute("SELECT * FROM users WHERE username=? AND password=?", (username, password))
+        with sqlite3.connect("uDB.db") as conn:
+            c = conn.cursor()
+        c.execute("SELECT * FROM uDB WHERE username=? AND password=?", (username, password))
         if c.fetchone():
             st.success("Logged in successfully")
             st.session_state.is_logged_in = True  # Update login state
@@ -57,10 +58,10 @@ elif st.session_state.page == "register":
     new_username = st.sidebar.text_input("New Username")
     new_password = st.sidebar.text_input("New Password", type="password")
     if st.sidebar.button("Register", key='regButton'):
-        conn = sqlite3.connect("users.db")
-        c = conn.cursor()
+        with sqlite3.connect("uDB.db") as conn:
+            c = conn.cursor()
         try:
-            c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (new_username, new_password))
+            c.execute("INSERT INTO uDB (username, password) VALUES (?, ?)", (new_username, new_password))
             conn.commit()
             st.sidebar.success("User registered successfully")
             setattr(st.session_state, "page", "login")  # Navigate back to login
@@ -87,3 +88,27 @@ if st.session_state.is_logged_in:
     user_input = st.text_input('Start your conversation here')
 else:
     st.warning("Please log in to access the chat feature")
+    user_input = False
+# Initialize
+chat_history = []
+
+if user_input:
+    # Simulate user's message
+    chat_history.append({"role": "user", "content": user_input})
+
+    # Generate a response using your model (Here you would call the method from the system class)
+    # For demonstration, I'm assuming a method called generate_response exists
+    ai_response = "Print this test string"
+
+    # Simulate AI's message
+    chat_history.append({"role": "AI", "content": ai_response})
+
+# Display Chat History
+st.write("## Chat History")
+for message in chat_history:
+    if message["role"] == "user":
+        st.write(f"You: {message['content']}")
+    else:
+        st.write(f"AI: {message['content']}")
+
+
