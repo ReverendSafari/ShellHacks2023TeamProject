@@ -6,6 +6,7 @@ import conversor as convo
 
 class current:
     user = None
+    lang = None
     ctype = None
 
 class analysis:
@@ -64,6 +65,10 @@ def init_db():
             conn.commit()
     except sqlite3.OperationalError as e:
         st.error(f"Database error: {e}")
+
+
+
+
 
 def dialog_frame():
     init_db()
@@ -196,5 +201,10 @@ def dialog_frame():
 
 
 def analytic_frame():
+
+    with st.column(1):
+        tgLang = st.selectbox('Target Language', convo.system.LANGS)
+
     if analysis.is_null():
-        analysis.analyze(current.user.name)
+        analysis.init(tgLang, current.user.name)
+    
