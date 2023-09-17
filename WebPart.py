@@ -154,3 +154,16 @@ def dialog_frame():
 
 
 def analytic_frame():
+    col1, col2 = st.columns(2)
+
+    # Getting the buttons inline for better visibility
+    with col1:
+        st.radio("test")
+        st.radio("test1")
+        st.radio("test2")
+        st.radio("test3")
+
+    with col2:
+        st.line_chart()
+        st.line_chart()
+        st.line_chart()
