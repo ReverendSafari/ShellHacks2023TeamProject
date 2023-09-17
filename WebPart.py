@@ -8,14 +8,17 @@ from Main import system
 # Initialize SQLite database
 def init_db():
     try:
-        with sqlite3.connect("uDB.db") as conn:
+        with sqlite3.connect("userDB.db") as conn:
             c = conn.cursor()
             c.execute(
-                """CREATE TABLE IF NOT EXISTS uDB (
+                """CREATE TABLE IF NOT EXISTS userDB (
                     username TEXT PRIMARY KEY,
-                    password TEXT NOT NULL
+                    password TEXT NOT NULL,
+                    ntLang TEXT,
+                    tgLang TEXT
                 );"""
             )
+
             conn.commit()
     except sqlite3.OperationalError as e:
         st.error(f"Database error: {e}")
@@ -30,6 +33,20 @@ if 'is_logged_in' not in st.session_state:  # Initialize login state
 # Sidebar
 st.sidebar.title('LangGPT')
 
+# Organization for the UI
+col1, col2, col3 = st.columns(3)
+
+# Getting the buttons inline for better visibility
+with col1:
+    ntLang = st.selectbox('Native language', ['english', 'spanish', 'french'])
+
+with col2:
+    tgLang = st.selectbox('Target Language', ['english', 'spanish', 'french'])
+
+with col3:
+    name = st.text_input('Enter a name for the bot')
+
+
 # Sidebar button nav
 if st.session_state.page == "login":
     st.sidebar.button("Go to Register", on_click=lambda: setattr(st.session_state, "page", "register"), key='regButton')
@@ -42,9 +59,9 @@ if st.session_state.page == "login":
     username = st.sidebar.text_input("Username")
     password = st.sidebar.text_input("Password", type="password")
     if st.sidebar.button("Submit", key="subButton"):
-        with sqlite3.connect("uDB.db") as conn:
+        with sqlite3.connect("userDB.db") as conn:
             c = conn.cursor()
-        c.execute("SELECT * FROM uDB WHERE username=? AND password=?", (username, password))
+        c.execute("SELECT * FROM userDB WHERE username=? AND password=?", (username, password))
         if c.fetchone():
             st.success("Logged in successfully")
             st.session_state.is_logged_in = True  # Update login state
@@ -58,10 +75,13 @@ elif st.session_state.page == "register":
     new_username = st.sidebar.text_input("New Username")
     new_password = st.sidebar.text_input("New Password", type="password")
     if st.sidebar.button("Register", key='regButton'):
-        with sqlite3.connect("uDB.db") as conn:
+        with sqlite3.connect("userDB.db") as conn:
             c = conn.cursor()
         try:
-            c.execute("INSERT INTO uDB (username, password) VALUES (?, ?)", (new_username, new_password))
+            c.execute(
+                "INSERT INTO userDB (username, password, ntLang, tgLang) VALUES (?, ?, ?, ?)",
+                (new_username, new_password, ntLang, tgLang)
+            )
             conn.commit()
             st.sidebar.success("User registered successfully")
             setattr(st.session_state, "page", "login")  # Navigate back to login
@@ -69,18 +89,6 @@ elif st.session_state.page == "register":
             st.sidebar.error("Username already exists. Please choose another.")
         conn.close()
 
-# Organization for the UI
-col1, col2, col3 = st.columns(3)
-
-# Getting the buttons inline for better visibility
-with col1:
-    ntLang = st.selectbox('Native language', ['english', 'spanish', 'french'])
-
-with col2:
-    tgLang = st.selectbox('Target Language', ['english', 'spanish', 'french'])
-
-with col3:
-    name = st.text_input('Enter a name for the bot')
 
 # Show the chat feature only if the user is logged in
 if st.session_state.is_logged_in:
