@@ -3,6 +3,9 @@ import sqlite3 as db
 import data
 import conversor as convo
 
+class current:
+    user = None
+    
 
 def general():
     # Sidebar
@@ -35,7 +38,7 @@ def general():
                 if arr:
                     st.success("Logged in successfully")
                     st.session_state.is_logged_in = True  # Update login state
-                    data.current.user = convo.user(username, arr[2], arr[3])
+                    current.user = convo.user(username, arr[2], arr[3])
                 else:
                     st.error("Invalid credentials")
                 conn.close()
@@ -59,11 +62,11 @@ def general():
 
                     try:
                         d.execute("CREATE TABLE IF NOT EXISTS " + new_username + " ("
-                                "time DOUBLE PRIMARY INDEX, "
+                                "language TEXT PRIMARY INDEX, "
+                                "time DOUBLE NOT NULL, "
                                 "grammar INT NOT NULL, "
                                 "syntax INT NOT NULL, "
-                                "vocab INT NOT NULL, "
-                                "language TEXT NOT NULL);")
+                                "vocab INT NOT NULL);")
                         da.commit()
 
                     except db.OperationalError as e:
@@ -71,8 +74,8 @@ def general():
 
                     da.close()
 
-                    st.sidebar.success("User registered successfully")
-                    data.current.user = convo.user(new_username, native_language, bot_name)
+                    st.sidebar.success("current.user registered successfully")
+                    current.user = convo.user(new_username, native_language, bot_name)
                     st.session_state.is_logged_in = True
                     setattr(st.session_state, "page", "login")  # Navigate back to login
                 except db.IntegrityError:  # Username already exists

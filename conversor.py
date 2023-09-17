@@ -169,7 +169,12 @@ class user:
     
     def _separate(self, string):
         #  g : [], s : [], v : [] 
-        substr = string.split('|')[1]
+        substr = string.split('|')
+
+        if len(substr) == 1:
+            return None
+        else:
+            substr = substr[1]
 
         # {g }, {[], s }, {[], v}, {[] }
         arr = substr.split(': ')
@@ -187,18 +192,19 @@ class user:
         
         points = self._separate(result)
 
-        nowtime = time.time_ns()
+        if points is not None:
+            nowtime = time.time()
 
-        with db.connect(self.name + ".db") as data:
-            d = data.cursor()
-        try:
-            d.execute("INSERT INTO " + self.name + " VALUES (?, ?, ?, ?, ?)", (nowtime, points[0], points[1], points[2], lang))
-            data.commit()
-        except db.OperationalError as e:
-            st.sidebar.error(f"Database Error: {e}")
+            with db.connect(self.name + ".db") as data:
+                d = data.cursor()
+            try:
+                d.execute("INSERT INTO " + self.name + " VALUES (?, ?, ?, ?, ?)", (nowtime, points[0], points[1], points[2], lang))
+                data.commit()
+            except db.OperationalError as e:
+                st.sidebar.error(f"Database Error: {e}")
+                
             
-        
-        data.close()
+            data.close()
 
         return result
 

@@ -1,11 +1,9 @@
 import streamlit as st
 import openai
 import sqlite3
-
 import conversor as convo
 
 class current:
-    user = None
     lang = None
     ctype = None
 
@@ -31,15 +29,17 @@ class analysis:
     def analyze(name):
         with sqlite3.connect(name + ".db") as data:
             d = data.cursor()
-            d.execute("SELECT * FROM " + name + " WHERE language=?", analysis.lang)
+            d.execute("SELECT * FROM " + name + " WHERE language=?", (analysis.lang,))
             arr = d.fetchall()
+        data.close()
         
         for tup in arr:
-            timestamp = int(tup[0] / 1000000)
+            if (analysis.lang == tup[0]):
+                timestamp = int((tup[1]) / 10000000)
 
-            analysis.grammar_dict[timestamp] = tup[1]
-            analysis.syntax_dict[timestamp] = tup[2]
-            analysis.vocab_dict[timestamp] = tup[3]
+                analysis.grammar_dict[timestamp] = tup[2]
+                analysis.syntax_dict[timestamp] = tup[3]
+                analysis.vocab_dict[timestamp] = tup[4]
     
                 
 
