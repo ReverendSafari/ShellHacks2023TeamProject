@@ -8,6 +8,45 @@ class current:
     user = None
     ctype = None
 
+class analysis:
+    lang = None
+    grammar_dict = {}
+    syntax_dict = {}
+    vocab_dict = {}
+
+    def is_null():
+        return analysis.lang is None
+    
+    def nullify():
+        analysis.lang = None
+        analysis.grammar_dict = {}
+        analysis.syntax_dict = {}
+        analysis.vocab_dict = {}
+    
+    def init(lang, name):
+        analysis.lang = lang
+        analysis.analyze(name)
+
+    def analyze(name):
+        with sqlite3.connect(name + ".db") as data:
+            d = data.cursor()
+            d.execute("SEARCH * FROM " + name + " WHERE language=?", analysis.lang)
+            arr = d.fetchall()
+        
+        for tup in arr:
+            timestamp = int(tup[0] / 1000000)
+
+            analysis.grammar_dict[timestamp] = tup[1]
+            analysis.syntax_dict[timestamp] = tup[2]
+            analysis.vocab_dict[timestamp] = tup[3]
+    
+
+
+
+
+        
+
+                
 
 # Initialize SQLite database
 def init_db():
@@ -28,6 +67,9 @@ def init_db():
 
 def dialog_frame():
     init_db()
+
+    if (not analysis.is_null()):
+        analysis.nullify()
     
     # Initialize session state
     if 'page' not in st.session_state:
@@ -154,3 +196,5 @@ def dialog_frame():
 
 
 def analytic_frame():
+    if analysis.is_null():
+        analysis.analyze(current.user.name)
