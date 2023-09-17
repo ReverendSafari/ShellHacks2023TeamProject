@@ -17,15 +17,19 @@ def init_db():
             c.execute(
                 """CREATE TABLE IF NOT EXISTS uDB (
                     username TEXT PRIMARY KEY,
-                    password TEXT NOT NULL
+                    password TEXT NOT NULL,
+                    nativlang TEXT NOT NULL,
+                    sysname TEXT NOT NULL
                 );"""
             )
             conn.commit()
     except sqlite3.OperationalError as e:
         st.error(f"Database error: {e}")
 
+
 def frame():
     init_db()
+    
     # Initialize session state
     if 'page' not in st.session_state:
         st.session_state.page = "login"
@@ -53,7 +57,7 @@ def frame():
             if c.fetchone():
                 st.success("Logged in successfully")
                 st.session_state.is_logged_in = True  # Update login state
-                current.user = convo.system.USERS[username]
+                current.user = convo.user(username, c[2], c[3])
             else:
                 st.error("Invalid credentials")
             conn.close()
@@ -70,8 +74,25 @@ def frame():
             with sqlite3.connect("uDB.db") as conn:
                 c = conn.cursor()
             try:
-                c.execute("INSERT INTO uDB (username, password) VALUES (?, ?)", (new_username, new_password))
+                c.execute("INSERT INTO uDB (username, password, nativlang, sysname) VALUES (?, ?, ?, ?)", (new_username, new_password, native_language, bot_name))
                 conn.commit()
+                with sqlite3.connect(new_username + ".db") as data:
+                    d = data.cursor()
+
+                try:
+                    d.execute("CREATE IF NOT EXISTS " + new_username + " ("
+                            "language TEXT PRIMARY KEY,"
+                            "time DOUBLE NOT NULL"
+                            "grammar INT NOT NULL"
+                            "syntax INT NOT NULL"
+                            "vocab INT NOT NULL);")
+                    data.commit()
+
+                except sqlite3.OperationalError as e:
+                    st.sidebar.error(f"Database Error: {e}")
+
+                data.close()
+
                 st.sidebar.success("User registered successfully")
                 current.user = convo.user(new_username, native_language, bot_name)
                 setattr(st.session_state, "page", "login")  # Navigate back to login

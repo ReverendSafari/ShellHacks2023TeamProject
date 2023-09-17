@@ -2,6 +2,9 @@
 #                    #
 import openai
 import os
+import sqlite3 as db
+import streamlit as st
+import time
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
@@ -47,9 +50,10 @@ class system:
     def generate_langcheck(sysname, lang, firstlang):
         system.checklang(lang, firstlang)
         return system.syscommand(sysname, "You are an expert " + lang + " speaker, you are speaking with a user. The user is trying to learn "
-                          + lang + " as it is not their first language. Their first language is " + firstlang + ". Assume they know no other languages unless specified otherwise. Your job is to assess the grammar of the sentences, "
-                          "and grade it as a fraction with denominator 100. The highest score available is 100/100. Go sentence by sentence making sure to grade each one "
-                          "separately and explain your response to the user in their native " + firstlang + ". Give specific and constructive criticism to help with syntax, grammar, vocabulary, and/or spelling. Specifically state the current score as a fraction with denominator 100")
+                          + lang + " as it is not their first language. Their first language is " + firstlang + ". Assume they know no other languages unless specified otherwise. Your job is to assess the grammar, syntax, and vocabulary of the sentences, "
+                          "(each as a separate category) and grade each section as a fraction with denominator 100. The highest score available per section is 100/100. Go sentence by sentence making sure to grade each one "
+                          "separately and explain your response to the user in their native " + firstlang + ". Give specific and constructive criticism to help with syntax, grammar, vocabulary, and/or spelling. In the end of each evaluation, you MUST sign off with the following:"
+                          "| grammar : [], syntax : [], vocabulary [] |, making sure to include the vertical lines as well for parsability. the [] represent the numerator of the grade of each section, respectively.")
 
     # this returns a new dialog_list for a dialog in which the AI is to continuously
     # converse in (lang) with a native speaker of (firstlang).
@@ -138,7 +142,6 @@ class user:
     translator = None
 
     langchecks = {}
-    scores = {}
 
     conversations = {}
     niches = {}
@@ -150,6 +153,7 @@ class user:
         if (first_language != "English"):
             self.translator = dialog.translator(first_language)
         system.USERS[name] = self
+        
 
     # creates a new langcheck in (lang).
     def _new_langcheck(self, lang):
@@ -164,16 +168,14 @@ class user:
       
     
     def _separate(self, string):
-        res = 0
+        #  g : [], s : [], v : [] 
+        substr = string.split('|')[1]
 
-        for i in range(len(string)):
-            if string[i].isnumeric():
-                res *= 10
-                res += int(string[i])
-            elif string[i - 1].isnumeric():
-                break
-        
-        return res
+        # {g }, {[], s }, {[], v}, {[] }
+        arr = string.split(': ')
+
+        return (int(arr[2].split(',')[0]), int(arr[3].split(',')[0]), int(arr[4].split(' ')[0]))
+
 
 
     # provides langcheck feedback to one sentence in (lang).
@@ -181,13 +183,21 @@ class user:
         if (lang not in self.langchecks):
             self._new_langcheck(lang)
         result = self.langchecks[lang].respond_to_prompt(prompt)
-        score = self._separate(result)
+        
+        points = self._separate(result)
 
-        self.scores[lang][0] *= (len(self.scores[lang]) - 1)
-        self.scores[lang][0] += float(score)
+        nowtime = time.time_ns()
 
-        self.scores[lang].append(score)
-        self.scores[lang][0] /= (len(self.scores[lang]) - 1)
+        with db.connect(self.name + ".db") as data:
+            d = data.cursor()
+        try:
+            d.execute("INSERT INTO " + self.name + " (language, time, grammar, syntax, vocab) VALUES (?, ?, ?, ?, ?)", (lang, nowtime, points[0], points[1], points[2]))
+            data.commit()
+        except db.OperationalError as e:
+            st.sidebar.error(f"Database Error: {e}")
+            
+        
+        data.close()
 
         return result
 
