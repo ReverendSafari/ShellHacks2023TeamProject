@@ -70,6 +70,7 @@ def init_db():
 
 
 
+
 def dialog_frame():
     init_db()
 
@@ -199,12 +200,21 @@ def dialog_frame():
                 st.write(current.user.sysname + f": {history[i]['content']}")   
 
 
-
 def analytic_frame():
+    col1, col2 = st.columns(2)
 
-    with st.column(1):
+
+    # Getting the buttons inline for better visibility
+    with col1:
         tgLang = st.selectbox('Target Language', convo.system.LANGS)
+        st.radio("test1")
+        st.radio("test2")
+        st.radio("test3")
 
-    if analysis.is_null():
-        analysis.init(tgLang, current.user.name)
+    with col2:
+        st.line_chart()
+        st.line_chart()
+        st.line_chart()
     
+    if analysis.is_null() or analysis.lang != tgLang:
+        analysis.init(tgLang, current.user.name)
