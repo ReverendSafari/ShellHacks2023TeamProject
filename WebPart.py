@@ -36,14 +36,14 @@ def frame():
         st.session_state.is_logged_in = False
 
         # Organization for the UI
-        col1, col2 = st.columns(2)
+    col1, col2 = st.columns(2)
 
         # Getting the buttons inline for better visibility
-        with col1:
-            tgLang = st.selectbox('Target Language', convo.system.LANGS)
+    with col1:
+        tgLang = st.selectbox('Target Language', convo.system.LANGS)
 
-        with col2:
-            current.ctype = st.selectbox('Dialog Type', ['Conversation', 'Advice and corrections'])
+    with col2:
+        current.ctype = st.selectbox('Dialog Type', ['Conversation', 'Advice and corrections'])
 
     # Sidebar
     st.sidebar.title('LangGPT')
@@ -63,10 +63,12 @@ def frame():
             with sqlite3.connect("userDB.db") as conn:
                 c = conn.cursor()
             c.execute("SELECT * FROM userDB WHERE username=? AND password=?", (username, password))
-            if c.fetchone():
+            arr = c.fetchone()
+
+            if arr:
                 st.success("Logged in successfully")
                 st.session_state.is_logged_in = True  # Update login state
-                current.user = convo.user(username, c[2], c[3])
+                current.user = convo.user(username, arr[2], arr[3])
             else:
                 st.error("Invalid credentials")
             conn.close()
@@ -79,7 +81,7 @@ def frame():
         native_language = st.sidebar.selectbox('Native Language', convo.system.LANGS)
         bot_name = st.sidebar.text_input("Bot Name")
 
-        if st.sidebar.button("Register", key='regButton'):
+        if st.sidebar.button("Register"):
             with sqlite3.connect("userDB.db") as conn:
                 c = conn.cursor()
             try:
@@ -89,11 +91,11 @@ def frame():
                     d = data.cursor()
 
                 try:
-                    d.execute("CREATE IF NOT EXISTS " + new_username + " ("
-                            "language TEXT PRIMARY KEY,"
-                            "time DOUBLE NOT NULL"
-                            "grammar INT NOT NULL"
-                            "syntax INT NOT NULL"
+                    d.execute("CREATE TABLE IF NOT EXISTS " + new_username + " ("
+                            "language TEXT PRIMARY KEY, "
+                            "time DOUBLE NOT NULL, "
+                            "grammar INT NOT NULL, "
+                            "syntax INT NOT NULL, "
                             "vocab INT NOT NULL);")
                     data.commit()
 
@@ -145,6 +147,3 @@ def frame():
                 st.write(current.user.name + f": {history[i]['content']}")
             else:
                 st.write(current.user.sysname + f": {history[i]['content']}")
-
-init_db()
-frame()
