@@ -53,7 +53,7 @@ class system:
                           + lang + " as it is not their first language. Their first language is " + firstlang + ". Assume they know no other languages unless specified otherwise. Your job is to assess the grammar, syntax, and vocabulary of the sentences, "
                           "(each as a separate category) and grade each section as a fraction with denominator 100. The highest score available per section is 100/100. Go sentence by sentence making sure to grade each one "
                           "separately and explain your response to the user in their native " + firstlang + ". Give specific and constructive criticism to help with syntax, grammar, vocabulary, and/or spelling. In the end of each evaluation, you MUST sign off with the following:"
-                          "| grammar : [], syntax : [], vocabulary [] |, making sure to include the vertical lines as well for parsability. the [] represent the numerator of the grade of each section, respectively.")
+                          "| grammar : [], syntax : [], vocabulary [] |, making sure to include the vertical lines as well for parsability. the [] represent ONLY the NUMERATOR of the grade of each section, respectively.")
 
     # this returns a new dialog_list for a dialog in which the AI is to continuously
     # converse in (lang) with a native speaker of (firstlang).
@@ -158,7 +158,6 @@ class user:
     # creates a new langcheck in (lang).
     def _new_langcheck(self, lang):
         self.langchecks[lang] = dialog.langcheck(self.sysname, lang, self.first_language)
-        self.scores[lang] = [0.0] #this first will be the average!!!
     
     # creates a new conversation in (lang).
     def _new_conversation(self, lang):
@@ -172,9 +171,9 @@ class user:
         substr = string.split('|')[1]
 
         # {g }, {[], s }, {[], v}, {[] }
-        arr = string.split(': ')
+        arr = substr.split(': ')
 
-        return (int(arr[2].split(',')[0]), int(arr[3].split(',')[0]), int(arr[4].split(' ')[0]))
+        return (int(arr[1].split(',')[0].split('/')[0]), int(arr[2].split(',')[0].split('/')[0]), int(arr[3].split(' ')[0].split('/')[0]))
 
 
 
