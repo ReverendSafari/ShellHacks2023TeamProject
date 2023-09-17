@@ -1,4 +1,4 @@
-import WebPart
+import data
 import streamlit as st
 import openai
 import conversor as convo
@@ -18,7 +18,7 @@ if __name__ == "__main__":
         st.line_chart()
         st.line_chart()
     
-    if WebPart.analysis.is_null() or WebPart.analysis.lang != tgLang:
-        WebPart.analysis.init(tgLang, WebPart.current.user.name)
+    if data.analysis.is_null() or data.analysis.lang != tgLang:
+        data.analysis.init(tgLang, data.current.user.name)
 
     
