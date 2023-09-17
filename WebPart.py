@@ -17,13 +17,13 @@ def init_db():
             c.execute(
                 """CREATE TABLE IF NOT EXISTS uDB (
                     username TEXT PRIMARY KEY,
-                    password TEXT NOT NULL
+                    password TEXT NOT NULL,
+                    native_language TEXT
                 );"""
             )
             conn.commit()
     except sqlite3.OperationalError as e:
         st.error(f"Database error: {e}")
-
 def frame():
     init_db()
     # Initialize session state
@@ -31,6 +31,16 @@ def frame():
         st.session_state.page = "login"
     if 'is_logged_in' not in st.session_state:  # Initialize login state
         st.session_state.is_logged_in = False
+
+        # Organization for the UI
+        col1, col2 = st.columns(2)
+
+        # Getting the buttons inline for better visibility
+        with col1:
+            tgLang = st.selectbox('Target Language', convo.system.LANGS)
+
+        with col2:
+            current.ctype = st.selectbox('Dialog Type', ['Conversation', 'Advice and corrections'])
 
     # Sidebar
     st.sidebar.title('LangGPT')
@@ -63,14 +73,16 @@ def frame():
         st.sidebar.title("Register")
         new_username = st.sidebar.text_input("New Username")
         new_password = st.sidebar.text_input("New Password", type="password")
-        native_language = st.sidebar.text_input("Native Language")
+        native_language = st.sidebar.selectbox('Native Language', convo.system.LANGS)
         bot_name = st.sidebar.text_input("Bot Name")
 
         if st.sidebar.button("Register", key='regButton'):
             with sqlite3.connect("uDB.db") as conn:
                 c = conn.cursor()
             try:
-                c.execute("INSERT INTO uDB (username, password) VALUES (?, ?)", (new_username, new_password))
+                c.execute(
+                    "INSERT INTO uDB (username, password, native_language) VALUES (?, ?, ?)",
+              (new_username, new_password, native_language))  # Updated query
                 conn.commit()
                 st.sidebar.success("User registered successfully")
                 current.user = convo.user(new_username, native_language, bot_name)
@@ -79,15 +91,6 @@ def frame():
                 st.sidebar.error("Username already exists. Please choose another.")
             conn.close()
 
-    # Organization for the UI
-    col1, col2 = st.columns(2)
-
-    # Getting the buttons inline for better visibility
-    with col1:
-        tgLang = st.selectbox('Target Language', convo.system.LANGS)
-
-    with col2:
-        current.ctype = st.selectbox('Dialog Type', ['Conversation', 'Advice and corrections'])
 
 
 
@@ -125,4 +128,5 @@ def frame():
             else:
                 st.write(current.user.sysname + f": {history[i]['content']}")
 
-
+init_db()
+frame()
