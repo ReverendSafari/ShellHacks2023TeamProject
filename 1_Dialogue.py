@@ -6,6 +6,7 @@ import sqlite3 as db
 import static
 
 
+#static.ERASE_DATA()
 
 data.init_db()
 

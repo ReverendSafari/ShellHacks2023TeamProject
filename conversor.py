@@ -152,6 +152,25 @@ class user:
         self.sysname = sysname
         if (first_language != "English"):
             self.translator = dialog.translator(first_language)
+        
+
+        with db.connect(self.name + ".db") as da:
+            d = da.cursor()
+
+        try:
+            d.execute("CREATE TABLE IF NOT EXISTS " + self.name + " ("
+                    "time DOUBLE NOT NULL, "
+                    "grammar INT NOT NULL, "
+                    "syntax INT NOT NULL, "
+                    "vocab INT NOT NULL, "
+                    "language TEXT NOT NULL);")
+            da.commit()
+
+        except db.OperationalError as e:
+            st.sidebar.error(f"Database Error: {e}")
+
+        da.close()
+
         system.USERS[name] = self
         
 
