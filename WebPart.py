@@ -26,7 +26,7 @@ def init_db():
     except sqlite3.OperationalError as e:
         st.error(f"Database error: {e}")
 
-def frame():
+def dialog_frame():
     init_db()
     
     # Initialize session state
@@ -45,76 +45,78 @@ def frame():
     with col2:
         current.ctype = st.selectbox('Dialog Type', ['Conversation', 'Advice and corrections'])
 
-    # Sidebar
-    st.sidebar.title('LangGPT')
 
-    # Sidebar button nav
-    if st.session_state.page == "login":
-        st.sidebar.button("Go to Register", on_click=lambda: setattr(st.session_state, "page", "register"), key='regButton')
-    elif st.session_state.page == "register":
-        st.sidebar.button("Go to Login", on_click=lambda: setattr(st.session_state, "page", "login"), key='logButton')
 
-    # Login State
-    if st.session_state.page == "login":
-        st.sidebar.title("Login")
-        username = st.sidebar.text_input("Username")
-        password = st.sidebar.text_input("Password", type="password")
-        if st.sidebar.button("Submit", key="subButton"):
-            with sqlite3.connect("userDB.db") as conn:
-                c = conn.cursor()
-            c.execute("SELECT * FROM userDB WHERE username=? AND password=?", (username, password))
-            arr = c.fetchone()
+    if not st.session_state.is_logged_in:
+        # Sidebar
+        st.sidebar.title('LangGPT')
 
-            if arr:
-                st.success("Logged in successfully")
-                st.session_state.is_logged_in = True  # Update login state
-                current.user = convo.user(username, arr[2], arr[3])
-            else:
-                st.error("Invalid credentials")
-            conn.close()
+        # Sidebar button nav
+        if st.session_state.page == "login":
+            st.sidebar.button("Go to Register", on_click=lambda: setattr(st.session_state, "page", "register"), key='regButton')
+        elif st.session_state.page == "register":
+            st.sidebar.button("Go to Login", on_click=lambda: setattr(st.session_state, "page", "login"), key='logButton')
 
-    # Registration State
-    elif st.session_state.page == "register":
-        st.sidebar.title("Register")
-        new_username = st.sidebar.text_input("New Username")
-        new_password = st.sidebar.text_input("New Password", type="password")
-        native_language = st.sidebar.selectbox('Native Language', convo.system.LANGS)
-        bot_name = st.sidebar.text_input("Bot Name")
+        # Login State
+        if st.session_state.page == "login":
+            st.sidebar.title("Login")
+            username = st.sidebar.text_input("Username")
+            password = st.sidebar.text_input("Password", type="password")
+            if st.sidebar.button("Submit", key="subButton"):
+                with sqlite3.connect("userDB.db") as conn:
+                    c = conn.cursor()
+                c.execute("SELECT * FROM userDB WHERE username=? AND password=?", (username, password))
+                arr = c.fetchone()
 
-        if st.sidebar.button("Register"):
-            with sqlite3.connect("userDB.db") as conn:
-                c = conn.cursor()
-            try:
-                c.execute("INSERT INTO userDB (username, password, nativlang, sysname) VALUES (?, ?, ?, ?)", (new_username, new_password, native_language, bot_name))
-                conn.commit()
-                with sqlite3.connect(new_username + ".db") as data:
-                    d = data.cursor()
+                if arr:
+                    st.success("Logged in successfully")
+                    st.session_state.is_logged_in = True  # Update login state
+                    current.user = convo.user(username, arr[2], arr[3])
+                else:
+                    st.error("Invalid credentials")
+                conn.close()
 
+        # Registration State
+        elif st.session_state.page == "register":
+            st.sidebar.title("Register")
+            new_username = st.sidebar.text_input("New Username")
+            new_password = st.sidebar.text_input("New Password", type="password")
+            native_language = st.sidebar.selectbox('Native Language', convo.system.LANGS)
+            bot_name = st.sidebar.text_input("Bot Name")
+
+            if st.sidebar.button("Register"):
+                with sqlite3.connect("userDB.db") as conn:
+                    c = conn.cursor()
                 try:
-                    d.execute("CREATE TABLE IF NOT EXISTS " + new_username + " ("
-                            "language TEXT PRIMARY KEY, "
-                            "time DOUBLE NOT NULL, "
-                            "grammar INT NOT NULL, "
-                            "syntax INT NOT NULL, "
-                            "vocab INT NOT NULL);")
-                    data.commit()
+                    c.execute("INSERT INTO userDB (username, password, nativlang, sysname) VALUES (?, ?, ?, ?)", (new_username, new_password, native_language, bot_name))
+                    conn.commit()
+                    with sqlite3.connect(new_username + ".db") as data:
+                        d = data.cursor()
 
-                except sqlite3.OperationalError as e:
-                    st.sidebar.error(f"Database Error: {e}")
+                    try:
+                        d.execute("CREATE TABLE IF NOT EXISTS " + new_username + " ("
+                                "language TEXT PRIMARY KEY, "
+                                "time DOUBLE NOT NULL, "
+                                "grammar INT NOT NULL, "
+                                "syntax INT NOT NULL, "
+                                "vocab INT NOT NULL);")
+                        data.commit()
 
-                data.close()
+                    except sqlite3.OperationalError as e:
+                        st.sidebar.error(f"Database Error: {e}")
 
-                st.sidebar.success("User registered successfully")
-                current.user = convo.user(new_username, native_language, bot_name)
-                setattr(st.session_state, "page", "login")  # Navigate back to login
-            except sqlite3.IntegrityError:  # Username already exists
-                st.sidebar.error("Username already exists. Please choose another.")
-            conn.close()
+                    data.close()
+
+                    st.sidebar.success("User registered successfully")
+                    current.user = convo.user(new_username, native_language, bot_name)
+                    st.session_state.is_logged_in = True
+                    setattr(st.session_state, "page", "login")  # Navigate back to login
+                except sqlite3.IntegrityError:  # Username already exists
+                    st.sidebar.error("Username already exists. Please choose another.")
+                conn.close()
 
 
-
-
-    # Show the chat feature only if the user is logged in
+        # Show the chat feature only if the user is logged in
     if st.session_state.is_logged_in:
         if (current.user is not None):
             st.title("LangGPT - " + current.user.sysname)
@@ -122,12 +124,13 @@ def frame():
         else:
             st.title("LangGPT")
             user_input = False
+
     else:
         st.warning("Please log in to access the chat feature")
         user_input = False
 
 
-    if current.user and current.ctype and user_input and st.button("Send"):
+    if  current.user and current.ctype and st.button("Send") and user_input:
         # Simulate user's message
         if (current.ctype == 'Conversation'):
             current.user._converse(user_input, tgLang)
@@ -146,4 +149,8 @@ def frame():
             if history[i]["role"] == "user":
                 st.write(current.user.name + f": {history[i]['content']}")
             else:
-                st.write(current.user.sysname + f": {history[i]['content']}")
+                st.write(current.user.sysname + f": {history[i]['content']}")   
+
+
+
+def analytic_frame():
