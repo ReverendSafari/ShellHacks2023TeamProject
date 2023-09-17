@@ -2,6 +2,9 @@ import random
 import streamlit as st
 
 class FlashSet:
+    name = None
+    flashcards = None 
+    
     def __init__(self, name):
         self.name = name
         self.flashcards = {}  # Use a dictionary to store flashcards

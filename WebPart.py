@@ -2,121 +2,127 @@ import streamlit as st
 import openai
 import sqlite3
 
-from Main import system
+import conversor as convo
+
+class current:
+    user = None
+    ctype = None
 
 
 # Initialize SQLite database
 def init_db():
     try:
-        with sqlite3.connect("userDB.db") as conn:
+        with sqlite3.connect("uDB.db") as conn:
             c = conn.cursor()
             c.execute(
-                """CREATE TABLE IF NOT EXISTS userDB (
+                """CREATE TABLE IF NOT EXISTS uDB (
                     username TEXT PRIMARY KEY,
-                    password TEXT NOT NULL,
-                    ntLang TEXT,
-                    tgLang TEXT
+                    password TEXT NOT NULL
                 );"""
             )
-
             conn.commit()
     except sqlite3.OperationalError as e:
         st.error(f"Database error: {e}")
 
-init_db()
-# Initialize session state
-if 'page' not in st.session_state:
-    st.session_state.page = "login"
-if 'is_logged_in' not in st.session_state:  # Initialize login state
-    st.session_state.is_logged_in = False
+def frame():
+    init_db()
+    # Initialize session state
+    if 'page' not in st.session_state:
+        st.session_state.page = "login"
+    if 'is_logged_in' not in st.session_state:  # Initialize login state
+        st.session_state.is_logged_in = False
 
-# Sidebar
-st.sidebar.title('LangGPT')
+    # Sidebar
+    st.sidebar.title('LangGPT')
 
-# Organization for the UI
-col1, col2, col3 = st.columns(3)
+    # Sidebar button nav
+    if st.session_state.page == "login":
+        st.sidebar.button("Go to Register", on_click=lambda: setattr(st.session_state, "page", "register"), key='regButton')
+    elif st.session_state.page == "register":
+        st.sidebar.button("Go to Login", on_click=lambda: setattr(st.session_state, "page", "login"), key='logButton')
 
-# Getting the buttons inline for better visibility
-with col1:
-    ntLang = st.selectbox('Native language', ['english', 'spanish', 'french'])
+    # Login State
+    if st.session_state.page == "login":
+        st.sidebar.title("Login")
+        username = st.sidebar.text_input("Username")
+        password = st.sidebar.text_input("Password", type="password")
+        if st.sidebar.button("Submit", key="subButton"):
+            with sqlite3.connect("uDB.db") as conn:
+                c = conn.cursor()
+            c.execute("SELECT * FROM uDB WHERE username=? AND password=?", (username, password))
+            if c.fetchone():
+                st.success("Logged in successfully")
+                st.session_state.is_logged_in = True  # Update login state
+                current.user = convo.system.USERS[username]
+            else:
+                st.error("Invalid credentials")
+            conn.close()
 
-with col2:
-    tgLang = st.selectbox('Target Language', ['english', 'spanish', 'french'])
+    # Registration State
+    elif st.session_state.page == "register":
+        st.sidebar.title("Register")
+        new_username = st.sidebar.text_input("New Username")
+        new_password = st.sidebar.text_input("New Password", type="password")
+        native_language = st.sidebar.text_input("Native Language")
+        bot_name = st.sidebar.text_input("Bot Name")
 
-with col3:
-    name = st.text_input('Enter a name for the bot')
+        if st.sidebar.button("Register", key='regButton'):
+            with sqlite3.connect("uDB.db") as conn:
+                c = conn.cursor()
+            try:
+                c.execute("INSERT INTO uDB (username, password) VALUES (?, ?)", (new_username, new_password))
+                conn.commit()
+                st.sidebar.success("User registered successfully")
+                current.user = convo.user(new_username, native_language, bot_name)
+                setattr(st.session_state, "page", "login")  # Navigate back to login
+            except sqlite3.IntegrityError:  # Username already exists
+                st.sidebar.error("Username already exists. Please choose another.")
+            conn.close()
+
+    # Organization for the UI
+    col1, col2 = st.columns(2)
+
+    # Getting the buttons inline for better visibility
+    with col1:
+        tgLang = st.selectbox('Target Language', convo.system.LANGS)
+
+    with col2:
+        current.ctype = st.selectbox('Dialog Type', ['Conversation', 'Advice and corrections'])
 
 
-# Sidebar button nav
-if st.session_state.page == "login":
-    st.sidebar.button("Go to Register", on_click=lambda: setattr(st.session_state, "page", "register"), key='regButton')
-elif st.session_state.page == "register":
-    st.sidebar.button("Go to Login", on_click=lambda: setattr(st.session_state, "page", "login"), key='logButton')
 
-# Login State
-if st.session_state.page == "login":
-    st.sidebar.title("Login")
-    username = st.sidebar.text_input("Username")
-    password = st.sidebar.text_input("Password", type="password")
-    if st.sidebar.button("Submit", key="subButton"):
-        with sqlite3.connect("userDB.db") as conn:
-            c = conn.cursor()
-        c.execute("SELECT * FROM userDB WHERE username=? AND password=?", (username, password))
-        if c.fetchone():
-            st.success("Logged in successfully")
-            st.session_state.is_logged_in = True  # Update login state
+    # Show the chat feature only if the user is logged in
+    if st.session_state.is_logged_in:
+        if (current.user is not None):
+            st.title("LangGPT - " + current.user.sysname)
+            user_input = st.text_input('Enter a sentence')
         else:
-            st.error("Invalid credentials")
-        conn.close()
-
-# Registration State
-elif st.session_state.page == "register":
-    st.sidebar.title("Register")
-    new_username = st.sidebar.text_input("New Username")
-    new_password = st.sidebar.text_input("New Password", type="password")
-    if st.sidebar.button("Register", key='regButton'):
-        with sqlite3.connect("userDB.db") as conn:
-            c = conn.cursor()
-        try:
-            c.execute(
-                "INSERT INTO userDB (username, password, ntLang, tgLang) VALUES (?, ?, ?, ?)",
-                (new_username, new_password, ntLang, tgLang)
-            )
-            conn.commit()
-            st.sidebar.success("User registered successfully")
-            setattr(st.session_state, "page", "login")  # Navigate back to login
-        except sqlite3.IntegrityError:  # Username already exists
-            st.sidebar.error("Username already exists. Please choose another.")
-        conn.close()
-
-
-# Show the chat feature only if the user is logged in
-if st.session_state.is_logged_in:
-    st.title("Chat Feature")
-    user_input = st.text_input('Start your conversation here')
-else:
-    st.warning("Please log in to access the chat feature")
-    user_input = False
-# Initialize
-chat_history = []
-
-if user_input:
-    # Simulate user's message
-    chat_history.append({"role": "user", "content": user_input})
-
-    # Generate a response using your model (Here you would call the method from the system class)
-    # For demonstration, I'm assuming a method called generate_response exists
-    ai_response = "Print this test string"
-
-    # Simulate AI's message
-    chat_history.append({"role": "AI", "content": ai_response})
-
-# Display Chat History
-st.write("## Chat History")
-for message in chat_history:
-    if message["role"] == "user":
-        st.write(f"You: {message['content']}")
+            st.title("LangGPT")
+            user_input = False
     else:
-        st.write(f"AI: {message['content']}")
+        st.warning("Please log in to access the chat feature")
+        user_input = False
+
+
+    if current.user and current.ctype and user_input and st.button("Send"):
+        # Simulate user's message
+        if (current.ctype == 'Conversation'):
+            current.user._converse(user_input, tgLang)
+        else:
+            current.user._feedback(user_input, tgLang)
+
+        # Display Chat History
+        st.write("Chat History")
+
+        if (current.ctype == 'Conversation'):
+            history = current.user.conversations[tgLang].dialog_list
+        else:
+            history = current.user.langchecks[tgLang].dialog_list
+
+        for i in range (1, len(history)):
+            if history[i]["role"] == "user":
+                st.write(current.user.name + f": {history[i]['content']}")
+            else:
+                st.write(current.user.sysname + f": {history[i]['content']}")
 
 
