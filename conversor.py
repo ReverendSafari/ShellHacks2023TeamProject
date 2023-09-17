@@ -52,8 +52,8 @@ class system:
         return system.syscommand(sysname, "You are an expert " + lang + " speaker, you are speaking with a user. The user is trying to learn "
                           + lang + " as it is not their first language. Their first language is " + firstlang + ". Assume they know no other languages unless specified otherwise. Your job is to assess the grammar, syntax, and vocabulary of the sentences, "
                           "(each as a separate category) and grade each section as a fraction with denominator 100. The highest score available per section is 100/100. Go sentence by sentence making sure to grade each one "
-                          "separately and explain your response to the user in their native " + firstlang + ". Give specific and constructive criticism to help with syntax, grammar, vocabulary, and/or spelling. In the end of each evaluation, you MUST sign off with the following:"
-                          "| grammar : [], syntax : [], vocabulary [] |, making sure to include the vertical lines as well for parsability. the [] represent ONLY the NUMERATOR of the grade of each section, respectively.")
+                          "separately and explain your response to the user in their native " + firstlang + ". Give specific and constructive criticism to help with syntax, grammar, vocabulary, and/or spellanguage. In the end of each evaluation, you MUST sign off with the following:"
+                          "| grammar : n, syntax : m, vocabulary : k |, making sure to include the vertical lines as well for parsability. n, m, k in this case are placeholders that represent ONLY the NUMERATOR of the grade of each section, respectively.")
 
     # this returns a new dialog_list for a dialog in which the AI is to continuously
     # converse in (lang) with a native speaker of (firstlang).
@@ -159,6 +159,7 @@ class user:
     def _new_langcheck(self, lang):
         self.langchecks[lang] = dialog.langcheck(self.sysname, lang, self.first_language)
     
+    
     # creates a new conversation in (lang).
     def _new_conversation(self, lang):
         self.conversations[lang] = dialog.conversation(self.sysname, lang, self.first_language)
@@ -181,6 +182,7 @@ class user:
     def _feedback(self, prompt, lang):
         if (lang not in self.langchecks):
             self._new_langcheck(lang)
+
         result = self.langchecks[lang].respond_to_prompt(prompt)
         
         points = self._separate(result)
@@ -190,7 +192,7 @@ class user:
         with db.connect(self.name + ".db") as data:
             d = data.cursor()
         try:
-            d.execute("INSERT INTO " + self.name + " (language, time, grammar, syntax, vocab) VALUES (?, ?, ?, ?, ?)", (lang, nowtime, points[0], points[1], points[2]))
+            d.execute("INSERT INTO " + self.name + " VALUES (?, ?, ?, ?, ?)", (nowtime, points[0], points[1], points[2], lang))
             data.commit()
         except db.OperationalError as e:
             st.sidebar.error(f"Database Error: {e}")

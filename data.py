@@ -31,7 +31,7 @@ class analysis:
     def analyze(name):
         with sqlite3.connect(name + ".db") as data:
             d = data.cursor()
-            d.execute("SEARCH * FROM " + name + " WHERE language=?", analysis.lang)
+            d.execute("SELECT * FROM " + name + " WHERE language=?", analysis.lang)
             arr = d.fetchall()
         
         for tup in arr:
