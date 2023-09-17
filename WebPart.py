@@ -12,10 +12,10 @@ class current:
 # Initialize SQLite database
 def init_db():
     try:
-        with sqlite3.connect("uDB.db") as conn:
+        with sqlite3.connect("userDB.db") as conn:
             c = conn.cursor()
             c.execute(
-                """CREATE TABLE IF NOT EXISTS uDB (
+                """CREATE TABLE IF NOT EXISTS userDB (
                     username TEXT PRIMARY KEY,
                     password TEXT NOT NULL,
                     nativlang TEXT NOT NULL,
@@ -60,9 +60,9 @@ def frame():
         username = st.sidebar.text_input("Username")
         password = st.sidebar.text_input("Password", type="password")
         if st.sidebar.button("Submit", key="subButton"):
-            with sqlite3.connect("uDB.db") as conn:
+            with sqlite3.connect("userDB.db") as conn:
                 c = conn.cursor()
-            c.execute("SELECT * FROM uDB WHERE username=? AND password=?", (username, password))
+            c.execute("SELECT * FROM userDB WHERE username=? AND password=?", (username, password))
             if c.fetchone():
                 st.success("Logged in successfully")
                 st.session_state.is_logged_in = True  # Update login state
@@ -80,10 +80,10 @@ def frame():
         bot_name = st.sidebar.text_input("Bot Name")
 
         if st.sidebar.button("Register", key='regButton'):
-            with sqlite3.connect("uDB.db") as conn:
+            with sqlite3.connect("userDB.db") as conn:
                 c = conn.cursor()
             try:
-                c.execute("INSERT INTO uDB (username, password, nativlang, sysname) VALUES (?, ?, ?, ?)", (new_username, new_password, native_language, bot_name))
+                c.execute("INSERT INTO userDB (username, password, nativlang, sysname) VALUES (?, ?, ?, ?)", (new_username, new_password, native_language, bot_name))
                 conn.commit()
                 with sqlite3.connect(new_username + ".db") as data:
                     d = data.cursor()
