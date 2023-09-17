@@ -1,26 +1,63 @@
-import sqlite3 as db
+import streamlit as st
+import openai
+import sqlite3
 
-databases = {}
+import conversor as convo
 
-class base:
-    valid_name = None #stores the valid name of the database (with file extension)
+class current:
+    user = None
+    lang = None
+    ctype = None
 
-    def __init__(self, name):
-        if name in databases:
-            raise NameError("This database already exists")
-        self.valid_name = name + ".db"
+class analysis:
+    lang = None
+    grammar_dict = {}
+    syntax_dict = {}
+    vocab_dict = {}
 
-        with db.connect(name) as file:
-            file.cursor.execute("CREATE TABLE IF NOT EXISTS " + name + " (")
-
-        databases[name] = self
+    def is_null():
+        return analysis.lang is None
     
+    def nullify():
+        analysis.lang = None
+        analysis.grammar_dict = {}
+        analysis.syntax_dict = {}
+        analysis.vocab_dict = {}
+    
+    def init(lang, name):
+        analysis.lang = lang
+        analysis.analyze(name)
 
-    def create(name, param_dict):
-
-        command = "CREATE TABLE IF NOT EXISTS " + name + " ("
+    def analyze(name):
+        with sqlite3.connect(name + ".db") as data:
+            d = data.cursor()
+            d.execute("SEARCH * FROM " + name + " WHERE language=?", analysis.lang)
+            arr = d.fetchall()
         
-        with db.connect(name + ".db") as file:
-            
+        for tup in arr:
+            timestamp = int(tup[0] / 1000000)
+
+            analysis.grammar_dict[timestamp] = tup[1]
+            analysis.syntax_dict[timestamp] = tup[2]
+            analysis.vocab_dict[timestamp] = tup[3]
+    
+                
+
+# Initialize SQLite database
+def init_db():
+    try:
+        with sqlite3.connect("userDB.db") as conn:
+            c = conn.cursor()
+            c.execute(
+                """CREATE TABLE IF NOT EXISTS userDB (
+                    username TEXT PRIMARY KEY,
+                    password TEXT NOT NULL,
+                    nativlang TEXT NOT NULL,
+                    sysname TEXT NOT NULL
+                );"""
+            )
+            conn.commit()
+    except sqlite3.OperationalError as e:
+        st.error(f"Database error: {e}")
 
 

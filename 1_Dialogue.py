@@ -1,81 +1,14 @@
+import data
 import streamlit as st
 import openai
-import sqlite3
-
 import conversor as convo
+import sqlite3 as db
 
-class current:
-    user = None
-    lang = None
-    ctype = None
+if __name__ == "__main__":
+    data.init_db()
 
-class analysis:
-    lang = None
-    grammar_dict = {}
-    syntax_dict = {}
-    vocab_dict = {}
-
-    def is_null():
-        return analysis.lang is None
-    
-    def nullify():
-        analysis.lang = None
-        analysis.grammar_dict = {}
-        analysis.syntax_dict = {}
-        analysis.vocab_dict = {}
-    
-    def init(lang, name):
-        analysis.lang = lang
-        analysis.analyze(name)
-
-    def analyze(name):
-        with sqlite3.connect(name + ".db") as data:
-            d = data.cursor()
-            d.execute("SEARCH * FROM " + name + " WHERE language=?", analysis.lang)
-            arr = d.fetchall()
-        
-        for tup in arr:
-            timestamp = int(tup[0] / 1000000)
-
-            analysis.grammar_dict[timestamp] = tup[1]
-            analysis.syntax_dict[timestamp] = tup[2]
-            analysis.vocab_dict[timestamp] = tup[3]
-    
-
-
-
-
-        
-
-                
-
-# Initialize SQLite database
-def init_db():
-    try:
-        with sqlite3.connect("userDB.db") as conn:
-            c = conn.cursor()
-            c.execute(
-                """CREATE TABLE IF NOT EXISTS userDB (
-                    username TEXT PRIMARY KEY,
-                    password TEXT NOT NULL,
-                    nativlang TEXT NOT NULL,
-                    sysname TEXT NOT NULL
-                );"""
-            )
-            conn.commit()
-    except sqlite3.OperationalError as e:
-        st.error(f"Database error: {e}")
-
-
-
-
-
-
-def dialog_frame():
-    init_db()
-
-    if (not analysis.is_null()):
-        analysis.nullify()
+    if (not data.analysis.is_null()):
+        data.analysis.nullify()
     
     # Initialize session state
     if 'page' not in st.session_state:
@@ -91,13 +24,13 @@ def dialog_frame():
         tgLang = st.selectbox('Target Language', convo.system.LANGS)
 
     with col2:
-        current.ctype = st.selectbox('Dialog Type', ['Conversation', 'Advice and corrections'])
+        data.current.ctype = st.selectbox('Dialog Type', ['Conversation', 'Advice and corrections'])
 
 
+    st.sidebar.title('LangGPT')
 
     if not st.session_state.is_logged_in:
         # Sidebar
-        st.sidebar.title('LangGPT')
 
         # Sidebar button nav
         if st.session_state.page == "login":
@@ -111,7 +44,7 @@ def dialog_frame():
             username = st.sidebar.text_input("Username")
             password = st.sidebar.text_input("Password", type="password")
             if st.sidebar.button("Submit", key="subButton"):
-                with sqlite3.connect("userDB.db") as conn:
+                with db.connect("userDB.db") as conn:
                     c = conn.cursor()
                 c.execute("SELECT * FROM userDB WHERE username=? AND password=?", (username, password))
                 arr = c.fetchone()
@@ -119,7 +52,7 @@ def dialog_frame():
                 if arr:
                     st.success("Logged in successfully")
                     st.session_state.is_logged_in = True  # Update login state
-                    current.user = convo.user(username, arr[2], arr[3])
+                    data.current.user = convo.user(username, arr[2], arr[3])
                 else:
                     st.error("Invalid credentials")
                 conn.close()
@@ -133,12 +66,12 @@ def dialog_frame():
             bot_name = st.sidebar.text_input("Bot Name")
 
             if st.sidebar.button("Register"):
-                with sqlite3.connect("userDB.db") as conn:
+                with db.connect("userDB.db") as conn:
                     c = conn.cursor()
                 try:
                     c.execute("INSERT INTO userDB (username, password, nativlang, sysname) VALUES (?, ?, ?, ?)", (new_username, new_password, native_language, bot_name))
                     conn.commit()
-                    with sqlite3.connect(new_username + ".db") as data:
+                    with db.connect(new_username + ".db") as data:
                         d = data.cursor()
 
                     try:
@@ -150,24 +83,24 @@ def dialog_frame():
                                 "vocab INT NOT NULL);")
                         data.commit()
 
-                    except sqlite3.OperationalError as e:
+                    except db.OperationalError as e:
                         st.sidebar.error(f"Database Error: {e}")
 
                     data.close()
 
                     st.sidebar.success("User registered successfully")
-                    current.user = convo.user(new_username, native_language, bot_name)
+                    data.current.user = convo.user(new_username, native_language, bot_name)
                     st.session_state.is_logged_in = True
                     setattr(st.session_state, "page", "login")  # Navigate back to login
-                except sqlite3.IntegrityError:  # Username already exists
+                except db.IntegrityError:  # Username already exists
                     st.sidebar.error("Username already exists. Please choose another.")
                 conn.close()
 
 
         # Show the chat feature only if the user is logged in
     if st.session_state.is_logged_in:
-        if (current.user is not None):
-            st.title("LangGPT - " + current.user.sysname)
+        if (data.current.user is not None):
+            st.title("LangGPT - " + data.current.user.sysname)
             user_input = st.text_input('Enter a sentence')
         else:
             st.title("LangGPT")
@@ -178,43 +111,23 @@ def dialog_frame():
         user_input = False
 
 
-    if  current.user and current.ctype and st.button("Send") and user_input:
+    if  data.current.user and data.current.ctype and st.button("Send") and user_input:
         # Simulate user's message
-        if (current.ctype == 'Conversation'):
-            current.user._converse(user_input, tgLang)
+        if (data.current.ctype == 'Conversation'):
+            data.current.user._converse(user_input, tgLang)
         else:
-            current.user._feedback(user_input, tgLang)
+            data.current.user._feedback(user_input, tgLang)
 
         # Display Chat History
         st.write("Chat History")
 
-        if (current.ctype == 'Conversation'):
-            history = current.user.conversations[tgLang].dialog_list
+        if (data.current.ctype == 'Conversation'):
+            history = data.current.user.conversations[tgLang].dialog_list
         else:
-            history = current.user.langchecks[tgLang].dialog_list
+            history = data.current.user.langchecks[tgLang].dialog_list
 
         for i in range (1, len(history)):
             if history[i]["role"] == "user":
-                st.write(current.user.name + f": {history[i]['content']}")
+                st.write(data.current.user.name + f": {history[i]['content']}")
             else:
-                st.write(current.user.sysname + f": {history[i]['content']}")   
-
-
-def analytic_frame():
-    col1, col2 = st.columns(2)
-
-
-    # Getting the buttons inline for better visibility
-    with col1:
-        tgLang = st.selectbox('Target Language', convo.system.LANGS)
-        st.radio("test1")
-        st.radio("test2")
-        st.radio("test3")
-
-    with col2:
-        st.line_chart()
-        st.line_chart()
-        st.line_chart()
-    
-    if analysis.is_null() or analysis.lang != tgLang:
-        analysis.init(tgLang, current.user.name)
+                st.write(data.current.user.sysname + f": {history[i]['content']}")   

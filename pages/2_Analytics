@@ -1,7 +1,24 @@
 import WebPart
+import streamlit as st
 import openai
 import conversor as convo
 
 if __name__ == "__main__":
-    WebPart.analytic_frame()
+    col1, col2 = st.columns(2)
+
+    # Getting the buttons inline for better visibility
+    with col1:
+        tgLang = st.selectbox('Target Language', convo.system.LANGS)
+        st.radio("test1")
+        st.radio("test2")
+        st.radio("test3")
+
+    with col2:
+        st.line_chart()
+        st.line_chart()
+        st.line_chart()
+    
+    if WebPart.analysis.is_null() or WebPart.analysis.lang != tgLang:
+        WebPart.analysis.init(tgLang, WebPart.current.user.name)
+
     
